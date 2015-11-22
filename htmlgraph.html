@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>HTML Graph</title>
+    <meta charset="utf-8" /> 
+    <script type="text/javascript" src="jquery-1.11.3.min.js"></script>
+    <script type="text/javascript" src="protovis-r3.2.js"></script>
+    <style type="text/css">
+      body, html {
+        height: 100%;
+        margin: 0;
+        font-size: 12px;
+      }
+      form, #legend, #copyright, #waiting {
+        width: 720px;
+        margin: 20px auto;
+      }
+      #pageurl {
+        width: 200px;
+      }
+      #canvasheight, #nodesize { width: 32px; text-align: center; }
+      #render { margin-right: 32px; }
+      #waiting { display: none; text-align: center; }
+      #legend { display: none; border: solid 1px #808080; padding: 10px; }
+      #copyright { text-align: center; margin-top: 50px; }
+      #copyright address { font-style: normal; }
+      #copyright a { text-decoration: none; color: #000000; }
+      #legend p, #copyright p { padding: 0 20px; line-height: 16px; }
+      #legend span { font-weight: bold; }
+    </style>
+  </head>
+  <body>
+
+    <form>
+      <h1>HTML Graph</h1>
+      <label for="pageurl">页面地址: </label>
+      <input type="text" name="pageurl" id="pageurl" placeholder="http://" />
+      <input type="button" value="获取并渲染" id="render" />
+      <label for="canvasheight">高度: </label>
+      <input type="text" name="canvasheight" id="canvasheight" value="" />px
+      <label style="margin-left: 16px;" for="nodesize">节点大小: </label>
+      <input type="text" name="nodesize" id="nodesize" value="10" />px
+      <input type="checkbox" name="samenode" id="samenode" value="1" />
+      <label for="samenode">相同节点大小</label>
+    </form>
+    <div id="waiting">
+      <img src="loader.gif" alt="loading..." />
+    </div>
+    <div id="copyright">
+      <address>&copy; <a href="http://zzp.lol">cumtzzp @ zzp.lol</a>, 2015</address>
+      <p>以前介绍过很多次的一个分析 HTML 页面 DOM 树并生成非常漂亮元素连接图的应用 <a href="http://www.aharef.info/static/htmlgraph" target="_blank">Websites as Graphs</a>，很可惜，现在这个网站已经无法访问了。本页面基于 <a href="http://jquery.com/" target="_blank">jQuery, <a href="http://mbostock.github.io/protovis/" target="_blank">Protovis</a> 和 <a href="https://developer.yahoo.com/yql/" target="_blank">YQL</a> 重现了该应用。Special thanks to all the developers of them.</p>
+      <p><a href="http://zzp.lol/pages/toys/htmlgraph.zip">下载源码</a>&emsp;&emsp;<a href="https://github.com/waxdoll/HTMLGraph" target="_blank">@Github</a>&emsp;&emsp;<a href="">建议反馈</a></p>
+    </div>
+    <div id="legend">
+      <h2>Color Legend</h2>
+      <p>
+        <span style="color: #000000;">black</span>: the HTML tag, the root node;
+        <span style="color: #FF0000;">red</span>: for tables (TABLE, TR and TD tags); 
+        <span style="color: #EFA500;">orange</span>: for linebreaks and blockquotes (BR, P and BLOCKQUOTE tags); 
+        <span style="color: #FFFF00;">yellow</span>: for forms (FORM, INPUT, TEXTAREA and OPTION tags); 
+        <span style="color: #008000;">green</span>: for the DIV tag; 
+        <span style="color: #00FFFF;">cyan</span>: for new HTML 5 tags;
+        <span style="color: #0000FF;">blue</span>: for links (the A tag);  
+        <span style="color: #EE82EE;">violet</span>: for images (the IMG tag); 
+        <span style="color: #808080;">gray</span>: all other tags. 
+      </p>
+    </div>
+  
+    <script type="text/javascript+protovis">
+
+      var dataobj = { nodes:[], links:[] };
+
+      var ordinal = depth = 0;
+
+      function getChildren(nd, id) {
+        if (nd.children().length == 0) {
+          return;
+        }
+        else {
+
+          var children = nd.children();
+          
+          for (var i = 0; i < children.length; i++) {
+            ordinal++;
+            
+            var docd = $(children[i]).parents().length;     //depth of current node
+
+            depth = Math.max(depth, docd); 
+
+            dataobj.nodes[dataobj.nodes.length] = {nodeName: children[i].tagName, group: docd, ordinal: ordinal};
+
+            if (ordinal > 1) {
+              dataobj.links[dataobj.links.length] = {source: ordinal - 1, target: id, value: 1};
+            }
+
+            getChildren($(children[i]), ordinal - 1);
+          }
+        }
+      }
+
+      $(document).ready(function(){
+
+        $("#canvasheight").val($(document.body).height());
+
+        $("#render").click(function(){
+
+          if (!$("#pageurl").val()) {
+            alert("请在“页面地址”中输入页面 URL 开始分析！");
+            return;
+          }
+
+          var samenodesize = $("#samenode:checked").length == 1;
+
+          $("body > span").remove();
+
+          $("#legend").css("display", "none");
+          $("#waiting").css("display", "block");
+
+          dataobj = { nodes: [], links: [] };
+          ordinal = depth = 0;
+          
+          $.getJSON(
+            "http://query.yahooapis.com/v1/public/yql?q=" + 
+            "select%20*%20from%20html%20where%20" +
+            "url=%22" + encodeURIComponent($("#pageurl").val()) +
+            "%22%20and%20" + 
+            "xpath=%22/html" +
+            "%22&format=xml'&callback=?",
+            function(data){
+
+              if(data.results[0]){
+
+                var rmtDoc = $($.parseXML(data.results[0]));
+
+                getChildren(rmtDoc, 0);
+
+                var h = $(document.body).height();
+
+                var ch = $("#canvasheight").val();
+
+                if (ch && parseInt(ch)) {
+                  h = ch;
+                }
+
+                var vis = new pv.Panel()
+                    .width($(document.body).width())
+                    .height(h)
+                    .fillStyle("white")
+                    .event("mousedown", pv.Behavior.pan());
+                    //.event("mousewheel", pv.Behavior.zoom());
+
+                var force = vis.add(pv.Layout.Force)
+                    .nodes(dataobj.nodes)
+                    .links(dataobj.links);
+
+                force.link.add(pv.Line);
+
+                force.node.add(pv.Dot)
+                    .size(function(d) {
+                      var size = 10;
+                      if (samenodesize) {
+                        //same node size
+                        var ns = $("#nodesize").val();
+                        if (ns && parseInt(ns)) {
+                          size = parseInt(ns);
+                        }
+                      }
+                      else {
+                        //different node size
+                        size = (depth - d.group + 1) * 5;
+                      }
+
+                      return size;
+                    })
+                    .fillStyle(function(d) {
+                      var fc = "#808080";     //gray: all other tags
+                      switch (d.nodeName.toLowerCase()) {
+                        case "a":
+                          fc = "#0000FF";     //blue: for links (the A tag)
+                          break;
+                        case "table":
+                        case "tr":
+                        case "td":
+                        case "th":
+                        case "thead":
+                        case "tbody":
+                        case "tfoot":
+                        case "caption":
+                          fc = "#FF0000";     //red: for tables (TABLE, TR and TD tags)
+                          break;
+                        case "div":
+                          fc = "#008000";     //green: for the DIV tag
+                          break;
+                        case "img":
+                          fc = "#EE82EE";     //violet: for images (the IMG tag)
+                          break;
+                        case "form":
+                        case "input":
+                        case "label":
+                        case "select":
+                        case "textarea":
+                        case "option":
+                          fc = "#FFFF00";     //yellow: for forms (FORM, INPUT, TEXTAREA and OPTION tag)
+                          break;
+                        case "br":
+                        case "p":
+                        case "blockquote":
+                          fc = "#EFA500";     //orange: for linebreaks and blockquotes (BR, P and BLOCKQUOTE tags)
+                          break;
+                        case "html":
+                          fc = "#000000";     //black: the HTML tag, the root node
+                          break;
+                        case "article":
+                        case "aside":
+                        case "audio":
+                        case "canvas":
+                        case "command":
+                        case "menu":
+                        case "datalist":
+                        case "details":
+                        case "figure":
+                        case "footer":
+                        case "header":
+                        case "hgroup":
+                        case "keygen":
+                        case "mark":
+                        case "meter":
+                        case "nav":
+                        case "output":
+                        case "progress":
+                        case "ruby":
+                        case "section":
+                        case "source":
+                        case "time":
+                        case "video":
+                          fc = "#00FFFF";       //cyan: for new HTML 5 tags
+                          break;
+                        default:
+                          break;
+                      }
+                      return fc;
+                    })
+                    .strokeStyle(function() this.fillStyle().darker())
+                    .lineWidth(1)
+                    .title(function(d) {return d.nodeName;})
+                    .event("mousedown", pv.Behavior.drag())
+                    .event("drag", force);
+
+                vis.render();
+
+                $("#waiting").css("display", "none");
+
+                $("#legend").appendTo("body").css("display", "block");
+                $("#copyright").appendTo("body").css("display", "block");
+
+            } else {
+              alert("错误：无法加载目标页面地址指定的页面内容！");
+            }
+          });
+        });
+      });
+    </script>
+
+  </body>
+</html>
