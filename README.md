@@ -1,6 +1,6 @@
 # HTMLGraph
 
-<p style="font-size: 36px; text-align: center;"><a href="http://zzp.lol/pages/toys/htmlgraph.html" target="_blank">demo</a></p>
+<p style="font-size: 36px; text-align: center;"><a href="https://cumtzzp.github.io/pages/htmlgraph/" target="_blank">demo</a></p>
 
 以前介绍过很多次的一个分析 HTML 页面 DOM 树并生成非常漂亮元素连接图的应用 [Websites as Graphs](http://www.aharef.info/static/htmlgraph)，很可惜，现在这个网站已经无法访问了。本页面基于 [jQuery](http://jquery.com/), [Protovis](http://mbostock.github.io/protovis/) 和 [YQL](https://developer.yahoo.com/yql/) 重现了该应用。
 
@@ -98,7 +98,7 @@ function getChildren(nd, id) {
 当然，青色的标签是 [Websites as Graphs](http://www.aharef.info/static/htmlgraph) 原来没有而此处新增的。
 
 <figure>
-    <img src="http://zzplol.b0.upaiyun.com/blog/post/htmlgraph_snap.png" alt="HTML Graph">
+    <img src="https://cumtzzp.github.io/images/snap_htmlgraph.png" alt="HTML Graph">
 </figure>
 
-细节大概就是这样，一个玩具而已，请到 [http://zzp.lol/pages/toys/htmlgraph.html](http://zzp.lol/pages/toys/htmlgraph.html) 试用。时间仓促，没有特别仔细了解 [Protovis](http://mbostock.github.io/protovis/) 的细节，所以难免会出现一些问题，请在页面 [http://zzp.lol/HTML-Graph/](http://zzp.lol/HTML-Graph/) 反馈，谢谢！
+细节大概就是这样，一个玩具而已，请到 [https://cumtzzp.github.io/pages/htmlgraph/](https://cumtzzp.github.io/pages/htmlgraph/) 试用。时间仓促，没有特别仔细了解 [Protovis](http://mbostock.github.io/protovis/) 的细节，所以难免会出现一些问题，请在页面 [http://zzp.lol/HTML-Graph/](http://zzp.lol/HTML-Graph/) 反馈，谢谢！
